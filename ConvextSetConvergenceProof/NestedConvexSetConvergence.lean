@@ -65,59 +65,49 @@ theorem convex_kuratowskiLimsup_of_succ_subset
     (h : ∀ n, C (n + 1) ⊆ C n)
     (hconv : ∀ n, Convex ℝ (C n)) :
     Convex ℝ (kuratowskiLimsup (X := X) C) := by
-
   rw [convex_iff_add_mem]
-
   intro x hx y hy a b ha hb hab
-
   dsimp [kuratowskiLimsup] at hx
-
   rcases hx with ⟨nx, hx⟩
   rcases hx with ⟨hMonox, hx⟩
   rcases hx with ⟨ck, hx⟩
   rcases hx with ⟨hck_mem, hx⟩
-
   dsimp [kuratowskiLimsup] at hy
-
   rcases hy with ⟨ny, hy⟩
   rcases hy with ⟨hMonoy, hy⟩
   rcases hy with ⟨sk, hy⟩
   rcases hy with ⟨hsk_mem, hy⟩
-
   --At the n index level, we are constructing n_hat
   set nhat : ℕ → ℕ := fun k => min (nx k) (ny k) with hnhat
-
   dsimp [kuratowskiLimsup]
   refine ⟨nhat, ?_⟩
-
   constructor
-
   · refine (strictMono_nat_of_lt_succ (α := ℕ) (f := nhat) ?_)
     intro k
     rw [hnhat]
-
+    dsimp
     by_cases hmin : nx k ≤ ny k
     · --pos
-      simp [hmin]
-
+      have hmin_eq : min (nx k) (ny k) = nx k := min_eq_left hmin
+      rw [hmin_eq]
+      apply (lt_min_iff).2
       constructor
       · exact hMonox (Nat.lt_succ_self k)
       · exact lt_of_le_of_lt (hmin) (hMonoy (Nat.lt_succ_self k))
-
     · --neg
-      simp
-
+      have hny_lt_nx : ny k < nx k := (not_le).1 hmin
+      have hny_le_nx : ny k ≤ nx k := le_of_lt hny_lt_nx
+      have hmin_eq : min (nx k) (ny k) = ny k := min_eq_right hny_le_nx
+      rw [hmin_eq]
+      apply (lt_min_iff).2
       constructor
-      left
-      exact hMonox (Nat.lt_succ_self k)
-      right
-      exact hMonoy (Nat.lt_succ_self k)
-
+      · exact lt_trans (hny_lt_nx) (hMonox (Nat.lt_succ_self k))
+      · exact hMonoy (Nat.lt_succ_self k)
   · set tk : ℕ → X := fun k => a • ck k + b • sk k with htk
     refine ⟨tk, ?_⟩
-
     constructor
-    · intro k
+    · --set membership C nhat
+      intro k
       rw [htk]
       have hanti : Antitone C := antitone_of_succ_subset (C := C) h
       have hle_x : nhat k ≤ nx k := by
@@ -128,15 +118,14 @@ theorem convex_kuratowskiLimsup_of_succ_subset
         rw [hnhat]
         exact min_le_right (nx k) (ny k)
       have hsk_hat : sk k ∈ C (nhat k) := (hanti hle_y) (hsk_mem k)
-
       have hconvk : Convex ℝ (C (nhat k)) := hconv (nhat k)
       have hadd := (convex_iff_add_mem).1 hconvk
       exact hadd hck_hat hsk_hat ha hb hab
-    · --
-      sorry
-
-  sorry
-
+    · -- convex combination tends to
+      rw [htk]
+      have hx' := hx.const_smul a
+      have hy' := hy.const_smul b
+      exact Tendsto.add (hx') (hy')
 end Main
 
 end NestedConvexSetConvergence
